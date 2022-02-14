@@ -1,21 +1,35 @@
-from django.http import HttpResponse, Http404
-from django.shortcuts import render
-from django.template import loader
-from .models import Question
+from django.http import HttpResponse, Http404, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
+from django.views import generic
+from .models import Question, Choice
 
-def index(request):
-    return render(request,'index.html',
-     {'latest_question_list': Question.objects.order_by('-pub_date')[:5]})
+class IndexView(generic.ListView):
+    template_name = 'index.html'
 
-def detail(request, question_id):
-    try:
-        return render(request, 'detail.html',
-         {'question': Question.objects.get(pk=question_id)})
-    except Question.DoesNotExist:
-        raise Http404("Question does not exist")
+    def get_queryset(self):
+        """Returns the 5 most recently published questions"""
+        return Question.objects.order_by('-pub_date')[:5]
 
-def results(request, question_id):
-    return HttpResponse(f"The results of question {question_id}")
+class DetailView(generic.DetailView):
+    model = Question
+    template_name = 'detail.html'
+
+class ResultsView(generic.DetailView):
+    model = Question
+    template_name = 'results.html'
 
 def vote(request, question_id):
-    return HttpResponse(f"Voting on question {question_id}")
+    question = get_object_or_404(Question, pk=question_id)
+    try:
+        selected_choice = question.choice_set.get(pk=request.POST['choice'])
+    except (KeyError, Choice.DoesNotExist):
+        # Redisplay the voting form with error message
+        return render(request, 'detail.html',
+         {'question': question,
+          'error_message': "You didn't select a choice."})
+    else:
+        selected_choice.votes += 1
+        selected_choice.save()
+        return HttpResponseRedirect(reverse('polls:results',
+         args=(question_id,) ))
