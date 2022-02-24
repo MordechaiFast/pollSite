@@ -9,20 +9,19 @@ class QuestionModelTest(TestCase):
 
     def test_was_published_recently_future(self):
         """Tests if was_published_recently() returns False for questions with future date"""
-        future_time = timezone.now() + timedelta(days=30)
+        future_time = timezone.now() + timedelta(seconds=1)
         future_question = Question(pub_date=future_time)
         assert not future_question.was_published_recently()
 
     def test_was_published_recently_old(self):
         """Tests that was_published_recently() returns False for questions older than one day"""
-        day_ago = timezone.now() - timedelta(days=1, seconds=1)
+        day_ago = timezone.now() - timedelta(days=1)
         old_question = Question(pub_date=day_ago)
         assert not old_question.was_published_recently()
 
     def test_was_published_recently_recent(self):
         """Tests that was_published_recently() returns True for questions within one day"""
         within_a_day = timezone.now() - timedelta(hours=23, minutes=59, seconds=59)
-        # Not a full day, because it takes a few microseconds to process
         recent_question = Question(pub_date=within_a_day)
         assert recent_question.was_published_recently()
 
